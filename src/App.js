@@ -1,25 +1,37 @@
-import logo from './logo.svg';
+import './Fallout.css';
 import './App.css';
+import HackScreen from './components/HackScreen';
+import { useState } from 'react';
+import MainMenu from './components/MainMenu';
+
+
 
 function App() {
+
+  const [screen, setScreen] = useState("hackScreen");
+  const screens = ["hackScreen","mainMenu"];
+
+  function changeScreen(newScreen) {
+    if (!screens.includes(newScreen)) {
+      console.log("ERR: invalid screen");
+      return;
+    }
+    setScreen(newScreen);
+  }
+
+  console.log("app.js/current screen: " + screen);
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div className="overlay"></div>
+      <div className="scanline"></div>
+      { 
+      screen == "hackScreen" ? <HackScreen screenSwitch={changeScreen} /> :
+      screen == "mainMenu" ? <MainMenu /> : null 
+      }
     </div>
   );
 }
+
+
 
 export default App;
