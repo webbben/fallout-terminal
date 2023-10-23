@@ -1,0 +1,89 @@
+$STAR_COUNT: 150;
+$TOP_SPEED: 5;
+
+@function directionVert($mode) {
+  // stars going to the side of the screen
+  @if $mode==1 {
+    @return random(100);
+  }
+  // stars going to the top or bottom
+  $n: random(2);
+  @if $n==1 {
+    @return 100;
+  }
+  @return 0;
+}
+
+@function directionHoriz($mode) {
+  @if $mode==1 {
+    $n: random(2);
+    @if $n==1 {
+      @return 100;
+    }
+    @return 0;
+  }
+  $x: random(100);
+  @return $x;
+}
+
+@mixin animationStar($name, $i) {
+  @keyframes #{$name} {
+    $dir: random(2);
+    $vert: directionVert($dir);
+    $horiz: directionHoriz($dir);
+    $sizeQuotient: $i % 10;
+    $size: $sizeQuotient + 20;
+    0% {
+      top: 50%;
+      left: 50%;
+      opacity: 0%;
+    }
+    40% {
+        opacity: 0;
+    }
+    100% {
+      top: percentage($vert/100);
+      left: percentage($horiz/100);
+      opacity: 90%;
+    }
+  }
+}
+
+@keyframes flicker {
+    0% {filter: brightness(0.8);}
+    100% {filter: brightness(1.3);}
+}
+
+//Create random animations
+@for $i from 1 to $STAR_COUNT {
+	@include animationStar("star" + $i, $i);
+}
+
+.stars {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: -999;
+  .star {
+    position: absolute;
+    color: rgba(25, 248, 9, 0.483);
+    &:after {
+      content: '+';
+    }
+    
+    @for $i from 1 through $STAR_COUNT { /* Change 50 to the number of stars you added in the previous step */
+      $rank: (($i % 10) + 1);
+      $distance: (($rank / 10) * 20) + random(20);
+      $duration: (40 + $TOP_SPEED) - $distance;
+      $flickerDuration: 1 - (random(5) / 10);
+      &:nth-child(#{$i}) {
+        top: percentage(random(100) / 100);
+        left: percentage(random(100) / 100);
+        font-size: #{$distance * 1.3}+px;
+        animation: star#{$i} #{$duration}+s infinite ease-in;
+      }
+    }
+  }
+}

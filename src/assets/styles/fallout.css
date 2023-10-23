@@ -3,7 +3,7 @@
 @font-face {
 	font-family: "VT323";   /*Can be any text*/
 	src: local("fixedsys"),
-	  url("./assets/fonts/fixedsys.ttf") format("truetype");
+	  url("../fonts/fixedsys.ttf") format("truetype");
 }
 
 @keyframes scroll {
@@ -26,8 +26,8 @@
 }
 
 @keyframes scan {
-	from { top: 0 }
-	to { top: 100% }
+	from { top: 0; height: 10; }
+	to { top: 100%; height: 30%; }
 }
 
 @keyframes flicker {
@@ -148,6 +148,7 @@ nav.site ul li {
 	top: 0;
 	left: 0;
 	width: 1px;
+	pointer-events: none;
 }
 /* add top: 0 to make the lines show up again. */
 .overlay:before {
@@ -161,7 +162,8 @@ nav.site ul li {
 		right: 0;
 		bottom: 0;
 		left: 0;
-	z-index: 2;
+	z-index: -900;
+	top: 0;
 }
 	
 .overlay:after {
@@ -175,7 +177,7 @@ nav.site ul li {
 		right: 0;
 		bottom: 0;
 		left: 0;
-	z-index: 2;
+	z-index: -900;
 }
 
 .col {
@@ -209,16 +211,6 @@ nav.site ul li {
 	width: 200px;
 }
 
-img.pip-hero {
-	display: block;
-	float: left;
-	height: auto;
-	margin: 5px 10px 5px 0;
-	width: 120px;
-}
-
-form {}
-
 label {
 	clear: left;
 	display: block;
@@ -239,12 +231,6 @@ textarea {
 	
 	width: 80%;
 	z-index: 10;
-}
-
-textarea {
-	margin-bottom: 20px;
-	overflow: auto;
-	resize: none;
 }
 
 input[type=text]:focus,
@@ -292,11 +278,9 @@ a.button:hover {
 	color: #383838;
 	opacity: 0.8;
 }
-
-.expandingArea { position: relative }
 	
 .scanline {
-	animation: scroll 10s 5s infinite;
+	animation: scan 10s 5s infinite;
 	background: -moz-linear-gradient(top,  rgba(0,221,0,0) 0%, rgba(0,221,0,1) 50%, rgba(0,221,0,0) 100%);
 	background: -webkit-linear-gradient(top,  rgba(0,221,0,0) 0%,rgba(0,221,0,1) 50%,rgba(0,221,0,0) 100%);
 	background: linear-gradient(to bottom,  rgba(0,221,0,0) 0%,rgba(0,221,0,1) 50%,rgba(0,221,0,0) 100%);
@@ -308,7 +292,7 @@ a.button:hover {
 		left: 0;
 		right: 0;
 		top: -5%;
-	z-index: 0;
+	z-index: -999;
     pointer-events: none;
 }
 

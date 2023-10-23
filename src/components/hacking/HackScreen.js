@@ -1,12 +1,14 @@
-import { text, generateLineNumbers, generateLines } from "../sourcetext";
-import { Component, createRef, useEffect, useRef, useState } from 'react';
+import { text, generateLines } from "../../sourcetext";
+import { Component, createRef } from 'react';
 import TextSpan from "./TextSpan";
 import Console from "./Console";
 import Attempts from "./Attempts";
-import sound_good from "../assets/sound/ui_hacking_passgood.wav";
-import sound_bad from "../assets/sound/ui_hacking_passbad.wav";
-import { render } from "@testing-library/react";
+import sound_good from "../../assets/sound/ui_hacking_passgood.wav";
+import sound_bad from "../../assets/sound/ui_hacking_passbad.wav";
 import HelpInfo from "./HelpInfo";
+import { Navigate } from "react-router-dom";
+import Fade from "../transitions/Fade";
+import GameOver from "./GameOver";
 
 class HackScreen extends Component {
 
@@ -14,29 +16,34 @@ class HackScreen extends Component {
     lines;
     words;
     consoleRef;
-    attemptsRef;
     isActive;
-    screenSwitch;
 
-    constructor(props) {
-        super(props);
+    constructor() {
+        super();
 
         // generate data and state for hackscreen
         this.hackScreenData = generateLines();
         this.lines = this.hackScreenData[0];
-        this.state = { password: this.hackScreenData[1], showHelp: false, duds: new Set() };
+        this.state = { 
+            password: this.hackScreenData[1], 
+            showHelp: false, 
+            duds: new Set(),
+            access: false,
+            attempts: 5,
+            showBody: true,
+            showMessage: false,
+        };
         this.words = this.hackScreenData[2]; // words (excluding password) visible on the screen
 
         // refs and properties
         this.consoleRef = createRef();
-        this.attemptsRef = createRef();
         this.isActive = true; // determines if the screen is active or not; if we should accept input
-        this.screenSwitch = props.screenSwitch;
         
         // bind callbacks
         this.onClickWord = this.onClickWord.bind(this);
         this.onHoverWord = this.onHoverWord.bind(this);
         this.toggleHelp = this.toggleHelp.bind(this);
+        this.handleTransition = this.handleTransition.bind(this);
     }
 
     componentDidMount() {
@@ -102,23 +109,20 @@ class HackScreen extends Component {
             this.accessGranted();
             return;
         }
+        // incorrect password; decrement attempts or handle game over
         const audio = new Audio(sound_bad);
         audio.play();
-        this.attemptsRef.current.decrement();
-        if (this.attemptsRef.current.state.attempts <= 0) {
-            this.isActive = false;
-            console.log("out of attempts :(");
-        }
+        this.setState({ attempts: this.state.attempts - 1 });
     }
 
     handleBrackets(word) {
-        if (Math.random() > 0.3) {
+        if (this.state.attempts === 5 || Math.random() > 0.3) {
             this.setState({ duds: this.state.duds.add(this.words.pop())});
             this.consoleRef.current.addLine("Dud removed", word);
             this.clear("hackScreen_consoleInput");
             return;
         }
-        this.attemptsRef.current.increment();
+        this.setState({ attempts: this.state.attempts + 1 })
         this.consoleRef.current.addLine("Attempts regenerated", word);
         this.clear("hackScreen_consoleInput");
     }
@@ -126,7 +130,7 @@ class HackScreen extends Component {
     accessGranted() {
         const audio = new Audio(sound_good);
         audio.play()
-        setTimeout(() => this.screenSwitch("mainMenu"), 3000);
+        setTimeout(() => this.setState({ access: true }), 3000);
     }
 
     // handler for when hovering over a word; causes word to be typed into the console input
@@ -171,24 +175,51 @@ class HackScreen extends Component {
 
         this.isActive = false;
         this.consoleRef.current.addLine("Accessing admin priviledges...","ADMIN");
-        await this.typeWriter("hackScreen_consoleInput", ". . . .", 500);
         this.clear("hackScreen_consoleInput");
+        await this.wait(1000);
+        this.consoleRef.current.clearConsole();
+        await this.typeWriter("hackScreen_consoleInput", "sudo su root", 30);
+        await this.wait(800);
+        this.consoleRef.current.addLine("","sudo su root");
+        await this.typeWriter("hackScreen_consoleInput", "rm -rf /", 30);
+        await this.wait(800);
+        this.consoleRef.current.addLine("","rm -rf /");
+        await this.typeWriter("hackScreen_consoleInput", ". . . .", 300);
+        this.clear("hackScreen_consoleInput");
+        this.consoleRef.current.addLine("",". . . .");
+        await this.wait(300);
         this.consoleRef.current.addLine("Access Granted!", "sysadmin override");
         this.accessGranted();
     }
 
     //#endregion  
 
+    handleTransition() {
+        if (!this.state.showBody) {
+            this.setState({showMessage: true});
+        }
+    }
+
     render() {
         console.log("render");
         console.log(this.state.password);
+
+        // handle game over state
+        if (this.state.attempts <= 0) {
+            this.isActive = false;
+            setTimeout(() => this.setState({showBody: false}), 2000);
+        }
+
         return (
+            <>
+            <Fade show={this.state.showBody} end={this.handleTransition} unmount>
             <div>
+                { this.state.access ? <Navigate to={'/main'} replace={true} /> : null }
                 { this.state.showHelp ? <HelpInfo toggleHelp={this.toggleHelp} /> : null }
                 <p id="header">
                 </p>
                 <br></br>
-                <Attempts ref={this.attemptsRef} />
+                <Attempts attempts={this.state.attempts} />
                 <div className="toolbar">
                     <button onMouseEnter={() => this.onHoverWord("HELP")}
                     onClick={() => this.toggleHelp()}>HELP</button>
@@ -206,7 +237,7 @@ class HackScreen extends Component {
                                 { line.map((word, wordNum) => {
                                     if (wordNum == 0) {
                                         return (
-                                            <span>{ word + " " }</span>
+                                            <span key={`marker${i}`}>{ word + " " }</span>
                                         );
                                     }
                                     idCount++;
@@ -230,6 +261,11 @@ class HackScreen extends Component {
                     </div>
                 </div>
             </div>
+            </Fade>
+            <Fade show={this.state.showMessage}>
+                <GameOver />
+            </Fade>
+            </>
         );
     }
     

@@ -7,7 +7,7 @@ function HelpInfo(props) {
             <h2>Fallout Terminal: <b>hacking</b></h2>
             <br />
             <p>
-                This is a "hacking" minigame representing a retro terminal where you need to find the password to login.
+                This is a "hacking" minigame - inspired by the Fallout videogame series - representing a retro terminal where you need to find the password to login.
                 The left side of the screen has various words mixed into gibberish text, and the right side is a console that returns output.
             </p>
             <br />
@@ -19,8 +19,8 @@ function HelpInfo(props) {
             <br />
             <p><b>Bracket text</b></p>
             <p>
-                You can also find spans of characters that are wrapped in brackets. Clicking these will replenish an attempt, or will erase a "dud" password.
-                These spans of bracket characters may look something like: "[!@_%]".
+                {`You can also find spans of characters that are wrapped in brackets. Clicking these will replenish an attempt, or will erase a "dud" password.
+                These spans of bracket characters may look something like "[!@_%]" or "<a$d>" - using (),{},[], or <>.`}
             </p>
             <br />
             <p>

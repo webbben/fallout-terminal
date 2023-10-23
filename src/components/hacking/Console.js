@@ -21,9 +21,17 @@ export default class Console extends Component {
     addLine(line, word) {
         let newLog = this.state.log.length >= 17 ? [] : [...this.state.log];
         newLog.push(word);
-        newLog.push(line);
+        if (line && line.length > 0) {
+            newLog.push(line);
+        }
         this.setState({
             log: newLog
+        });
+    }
+
+    clearConsole() {
+        this.setState({
+            log: []
         });
     }
 

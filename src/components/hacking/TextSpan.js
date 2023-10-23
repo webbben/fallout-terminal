@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { text } from "../sourcetext";
+import { text } from "../../sourcetext";
 
 
 
