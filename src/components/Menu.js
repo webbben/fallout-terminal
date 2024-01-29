@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Menu() {
 
@@ -11,7 +11,7 @@ export default function Menu() {
         <div className="menuItems">
             <div className="menuItem" onClick={() => navigate('/main/about')}>About</div>
             <div className="menuItem" onClick={() => navigate('/main/resume')}>Resume</div>
-            <div className="menuItem">Github</div>
+            <div className="menuItem" onClick={() => window.location.href = "https://github.com/webbben"}>Github</div>
             <div className="menuItem" onClick={() => navigate('/')}>↩ Hacking Minigame</div>
         </div>
         </>
