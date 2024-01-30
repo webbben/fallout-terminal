@@ -71,16 +71,19 @@ class HackScreen extends Component {
 
     // mimics a typewriter and types text into the element of the given id
     async typeWriter(id, text, speed, overwrite = true) {
-      if (overwrite) { document.getElementById(id).innerHTML = ""; }
-      for (let i = 0; i < text.length; i++) {
-        document.getElementById(id).innerHTML += text.charAt(i);
-        await this.wait(speed);
-        if (document.getElementById(id).innerHTML.length - 5 > text.length) {
-            console.log("abort!");
-            //await typeWriter(id, text, speed);
-            //return; TODO - delete this? was causing a glitch with <> text
+        if (!document.getElementById(id)) return;
+        if (overwrite) {
+            document.getElementById(id).innerHTML = ""; 
         }
-      }
+        for (let i = 0; i < text.length; i++) {
+            document.getElementById(id).innerHTML += text.charAt(i);
+            await this.wait(speed);
+            if (document.getElementById(id).innerHTML.length - 5 > text.length) {
+                console.log("abort!");
+                //await typeWriter(id, text, speed);
+                //return; TODO - delete this? was causing a glitch with <> text
+            }
+        }
     }
 
     // clear text from the element of the given id
