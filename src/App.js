@@ -1,16 +1,14 @@
 import './App.css';
 import './assets/styles/animations.scss';
-import { Outlet } from 'react-router-dom';
-import Fallout from './components/effects/Fallout';
-
+import HackScreen from './components/hacking/HackScreen';
 
 
 function App() {
 
   return (
     <div className="App">
-      <Fallout />
-      <Outlet />
+      
+      <HackScreen />
     </div>
   );
 }

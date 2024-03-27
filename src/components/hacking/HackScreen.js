@@ -6,10 +6,19 @@ import Attempts from "./Attempts";
 import sound_good from "../../assets/sound/ui_hacking_passgood.wav";
 import sound_bad from "../../assets/sound/ui_hacking_passbad.wav";
 import HelpInfo from "./HelpInfo";
-import { Navigate } from "react-router-dom";
 import Fade from "../transitions/Fade";
 import GameOver from "./GameOver";
+import Fallout from '../effects/Fallout';
 
+/**
+ * Fallout terminal hacking component
+ * 
+ * props:
+ * 
+ * 
+ * @prop {function} accessCallback callback function for when access is granted; use this to change state or do whatever you like.
+ * @prop {boolean} falloutFx boolean flag for whether or not to show the extra retro terminal effects, like the scrolling line or the thin black bars. Defaults to true.
+ */
 class HackScreen extends Component {
 
     hackScreenData;
@@ -18,8 +27,17 @@ class HackScreen extends Component {
     consoleRef;
     isActive;
 
-    constructor() {
-        super();
+    accessCallback;
+    falloutFx;
+
+    constructor(props) {
+        super(props);
+        this.accessCallback = props.accessCallback;
+        if (props.falloutFx === false) {
+            this.falloutFx = false;
+        } else {
+            this.falloutFx = true;
+        }
 
         // generate data and state for hackscreen
         this.hackScreenData = generateLines();
@@ -215,9 +233,17 @@ class HackScreen extends Component {
 
         return (
             <>
+            { this.falloutFx && <Fallout /> }
             <Fade show={this.state.showBody} end={this.handleTransition} unmount>
             <div>
-                { this.state.access ? <Navigate to={'/main'} replace={true} /> : null }
+                {
+                    /*
+                    The callback function to call when access is granted
+                    @type {string}
+                    @required
+                    */
+                }
+                { this.state.access ? (this.accessCallback ? this.accessCallback() : console.log("access granted!")) : null }
                 { this.state.showHelp ? <HelpInfo toggleHelp={this.toggleHelp} /> : null }
                 <p id="header">
                 </p>
