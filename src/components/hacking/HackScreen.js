@@ -1,5 +1,5 @@
 import { text, generateLines } from "../../sourcetext";
-import { Component, createRef } from 'react';
+import { Component, createRef, useEffect, useRef, useState } from 'react';
 import TextSpan from "./TextSpan";
 import Console from "./Console";
 import Attempts from "./Attempts";
@@ -9,6 +9,7 @@ import HelpInfo from "./HelpInfo";
 import Fade from "../transitions/Fade";
 import GameOver from "./GameOver";
 import Fallout from '../effects/Fallout';
+import TypeText from "./TypeText";
 
 /**
  * Fallout terminal hacking component
@@ -19,94 +20,48 @@ import Fallout from '../effects/Fallout';
  * @prop {function} accessCallback callback function for when access is granted; use this to change state or do whatever you like.
  * @prop {boolean} falloutFx boolean flag for whether or not to show the extra retro terminal effects, like the scrolling line or the thin black bars. Defaults to true.
  */
-class HackScreen extends Component {
+export default function HackScreen({ accessCallback, falloutFx }) {
 
-    hackScreenData;
-    lines;
-    words;
-    consoleRef;
-    isActive;
-
-    accessCallback;
-    falloutFx;
-
-    constructor(props) {
-        super(props);
-        this.accessCallback = props.accessCallback;
-        if (props.falloutFx === false) {
-            this.falloutFx = false;
-        } else {
-            this.falloutFx = true;
-        }
-
-        // generate data and state for hackscreen
-        this.hackScreenData = generateLines();
-        this.lines = this.hackScreenData[0];
-        this.state = { 
-            password: this.hackScreenData[1], 
-            showHelp: false, 
-            duds: new Set(),
-            access: false,
-            attempts: 5,
-            showBody: true,
-            showMessage: false,
-        };
-        this.words = this.hackScreenData[2]; // words (excluding password) visible on the screen
-
-        // refs and properties
-        this.consoleRef = createRef();
-        this.isActive = true; // determines if the screen is active or not; if we should accept input
-        
-        // bind callbacks
-        this.onClickWord = this.onClickWord.bind(this);
-        this.onHoverWord = this.onHoverWord.bind(this);
-        this.toggleHelp = this.toggleHelp.bind(this);
-        this.handleTransition = this.handleTransition.bind(this);
+    if (falloutFx === undefined) {
+        falloutFx = true;
     }
 
-    componentDidMount() {
-        const writeToScreen = async () => {
-            await this.typeWriter("header", text.hackScreen.header, 30);
+    const set = new Set();
+
+    const [lines, setLines] = useState([]);
+    const [password, setPassword] = useState('');
+    const [showHelp, setShowHelp] = useState(false);
+    const [duds, setDuds] = useState(set);
+    const [access, setAccess] = useState(false);
+    const [attempts, setAttempts] = useState(5);
+    const [showBody, setShowBody] = useState(true);
+    const [showMessage, setShowMessage] = useState(false);
+    const [curWord, setCurWord] = useState('');
+    const [log, setLog] = useState([]);
+
+    function addToLog(enteredWord, consoleResult) {
+        if (log.length >= 16) {
+            setLog([enteredWord, consoleResult]);
+            return;
         }
-        writeToScreen();
-        this.cursorBlink();
+        setLog((prevLog) => [...prevLog, enteredWord, consoleResult]);
     }
+
+    const words = useRef([]);
+    const isActive = useRef(true);
+
+    useEffect(() => {
+        const data = generateLines();
+        setLines(data[0]);
+        setPassword(data[1]);
+        setDuds(new Set());
+        words.current = data[2];
+    }, []);
 
     //#region functions for typing to the screen 
 
-    async cursorBlink() {
-        while(this.isActive) {
-            await this.typeWriter("hackScreen_cursor", "_", 0);
-            await this.wait(1000);
-            this.clear("hackScreen_cursor");
-            await this.wait(1000);
-        }
-    }
-
-    wait(milliseconds) {
+    function wait(milliseconds) {
       return new Promise((resolve) => setTimeout(resolve, milliseconds));
-    }
-
-    // mimics a typewriter and types text into the element of the given id
-    async typeWriter(id, text, speed, overwrite = true) {
-        if (!document.getElementById(id)) return;
-        if (overwrite) {
-            document.getElementById(id).innerHTML = ""; 
-        }
-        for (let i = 0; i < text.length; i++) {
-            document.getElementById(id).innerHTML += text.charAt(i);
-            await this.wait(speed);
-            if (document.getElementById(id).innerHTML.length - 5 > text.length) {
-                console.log("abort!");
-                //await typeWriter(id, text, speed);
-                //return; TODO - delete this? was causing a glitch with <> text
-            }
-        }
-    }
-
-    // clear text from the element of the given id
-    async clear(id) {
-        await this.typeWriter(id, "", 0, true);
     }
     
     //#endregion
@@ -114,65 +69,57 @@ class HackScreen extends Component {
     //#region handlers for console input
 
     // handler for when a word is clicked so it can be checked with the password
-    onClickWord(word, isBracket=false) {
-        if (!this.isActive) return;
+    function onClickWord(word, isBracket=false) {
+        if (!isActive.current) return;
         if (isBracket) {
-            this.handleBrackets(word);
+            handleBrackets(word);
             return;
         }
-        const result = this.evaluateWord(word);
+        const result = evaluateWord(word);
         console.log(result[0]);
-        this.consoleRef.current.addLine(result[1], word);
-        this.clear("hackScreen_consoleInput");
+        addToLog(word, result[1]);
+        setCurWord('');
         if (result[0]) {
             // correct password; start transition to next screen
-            this.isActive = false;
-            this.accessGranted();
+            isActive.current = false;
+            accessGranted();
             return;
         }
         // incorrect password; decrement attempts or handle game over
         const audio = new Audio(sound_bad);
         audio.play();
-        this.setState({ attempts: this.state.attempts - 1 });
+        setAttempts((prevAttempts) => prevAttempts - 1);
     }
 
-    handleBrackets(word) {
-        if (this.state.attempts === 5 || Math.random() > 0.3) {
-            this.setState({ duds: this.state.duds.add(this.words.pop())});
-            this.consoleRef.current.addLine("Dud removed", word);
-            this.clear("hackScreen_consoleInput");
+    function handleBrackets(word) {
+        if (attempts === 5 || Math.random() > 0.3) {
+            setDuds((prevDuds) => {
+                prevDuds.add(words.current.pop())
+            });
+            addToLog(word, "Dud removed");
+            setCurWord('');
             return;
         }
-        this.setState({ attempts: this.state.attempts + 1 })
-        this.consoleRef.current.addLine("Attempts regenerated", word);
-        this.clear("hackScreen_consoleInput");
+        setAttempts((prevAttempts) => prevAttempts + 1);
+        addToLog(word, "Attempts regenerated");
+        setCurWord('');
     }
 
-    accessGranted() {
+    function accessGranted() {
         const audio = new Audio(sound_good);
         audio.play()
-        setTimeout(() => this.setState({ access: true }), 3000);
+        setTimeout(() => setAccess(true), 3000);
     }
 
     // handler for when hovering over a word; causes word to be typed into the console input
-    onHoverWord(word) {
-        if (!this.isActive) return;
-        const writeToConsole = async () => {
-            this.consoleRef.current.isBusy = true;
-            await this.typeWriter("hackScreen_consoleInput", word, 30);
-            if (word != this.consoleRef.current.currentWord) { 
-                await this.typeWriter("hackScreen_consoleInput", this.consoleRef.current.currentWord, 0);
-            }
-            this.consoleRef.current.isBusy = false;
-        }
-        this.consoleRef.current.currentWord = word;
-        if (this.consoleRef.current.isBusy) return;
-        writeToConsole();
+    function onHoverWord(word) {
+        if (!isActive.current) return;
+        setCurWord(word);
     }
 
     // evaluate if the given word is the password; returns the number of matching chars if not.
-    evaluateWord(word) {
-        if (word === this.state.password) {
+    function evaluateWord(word) {
+        if (word === password) {
             return [
                 true,
                 "Exact match!"
@@ -180,124 +127,118 @@ class HackScreen extends Component {
         }
         let matchCount = 0;
         for (let i = 0; i < word.length; i++) {
-            if (word.charAt(i) == this.state.password.charAt(i)) {
+            if (word.charAt(i) == password.charAt(i)) {
                 matchCount++;
             }
         }
-        return [false, matchCount + "/" + this.state.password.length + " correct"];
+        return [false, matchCount + "/" + password.length + " correct"];
     }
 
-    toggleHelp() {
-        this.setState({ showHelp: !this.state.showHelp });
+    function toggleHelp() {
+        setShowHelp(!showHelp);
     }
 
-    async onClickAdmin() {
-        if (!this.isActive) return;
+    async function onClickAdmin() {
+        if (!isActive.current) return;
 
-        this.isActive = false;
-        this.consoleRef.current.addLine("Accessing admin priviledges...","ADMIN");
-        this.clear("hackScreen_consoleInput");
-        await this.wait(1000);
-        this.consoleRef.current.clearConsole();
-        await this.typeWriter("hackScreen_consoleInput", "sudo su root", 30);
-        await this.wait(800);
-        this.consoleRef.current.addLine("","sudo su root");
-        await this.typeWriter("hackScreen_consoleInput", "rm -rf /", 30);
-        await this.wait(800);
-        this.consoleRef.current.addLine("","rm -rf /");
-        await this.typeWriter("hackScreen_consoleInput", ". . . .", 300);
-        this.clear("hackScreen_consoleInput");
-        this.consoleRef.current.addLine("",". . . .");
-        await this.wait(300);
-        this.consoleRef.current.addLine("Access Granted!", "sysadmin override");
-        this.accessGranted();
+        isActive.current = false;
+        addToLog("ADMIN", "Accessing admin priviledges...");
+        setCurWord('');
+        await wait(1000);
+        setLog([]);
+        await wait(100);
+        setCurWord("sudo su root");
+        await wait(800);
+        addToLog("sudo su root", "");
+        setCurWord("rm -rf /");
+        await wait(800);
+        addToLog("rm -rf /", "");
+        setCurWord(". . . .");
+        await wait(500);
+        setCurWord('');
+        addToLog(". . . .", "");
+        await wait(300);
+        addToLog("sysadmin override", "Access Granted!");
+        accessGranted();
     }
 
     //#endregion  
 
-    handleTransition() {
-        if (!this.state.showBody) {
-            this.setState({showMessage: true});
+    function handleTransition() {
+        if (!showBody) {
+            setShowMessage(true);
         }
     }
 
-    render() {
-        console.log("render");
-        console.log(this.state.password);
+    // handle game over state
+    if (attempts <= 0) {
+        isActive.current = false;
+        setTimeout(() => setShowBody(false), 2000);
+    }
 
-        // handle game over state
-        if (this.state.attempts <= 0) {
-            this.isActive = false;
-            setTimeout(() => this.setState({showBody: false}), 2000);
-        }
-
-        return (
-            <>
-            { this.falloutFx && <Fallout /> }
-            <Fade show={this.state.showBody} end={this.handleTransition} unmount>
-            <div>
-                {
-                    /*
-                    The callback function to call when access is granted
-                    @type {string}
-                    @required
-                    */
-                }
-                { this.state.access ? (this.accessCallback ? this.accessCallback() : console.log("access granted!")) : null }
-                { this.state.showHelp ? <HelpInfo toggleHelp={this.toggleHelp} /> : null }
-                <p id="header">
-                </p>
-                <br></br>
-                <Attempts attempts={this.state.attempts} />
-                <div className="toolbar">
-                    <button onMouseEnter={() => this.onHoverWord("HELP")}
-                    onClick={() => this.toggleHelp()}>HELP</button>
-                    <button onMouseEnter={() => this.onHoverWord("ADMIN")}
-                    onClick={() => this.onClickAdmin()}>ADMIN</button>
-                </div>
-                <div style={{display: "flex"}}>
-                    <div 
-                    style={{paddingRight: "10px", borderRight: "1px solid #ccc"}} 
-                    onMouseLeave={() => this.clear("hackScreen_consoleInput")}>
-                    { this.lines.map((line, i) => {
-                        let idCount = 0;
-                        return (
-                            <div key={"line" + i}>
-                                { line.map((word, wordNum) => {
-                                    if (wordNum == 0) {
-                                        return (
-                                            <span key={`marker${i}`}>{ word + " " }</span>
-                                        );
-                                    }
-                                    idCount++;
+    return (
+        <>
+        { falloutFx && <Fallout /> }
+        <Fade show={showBody} end={handleTransition} unmount speed={"fast"}>
+        <div>
+            {
+                /*
+                The callback function to call when access is granted
+                @type {string}
+                @required
+                */
+            }
+            { access ? (accessCallback ? accessCallback() : console.log("access granted!")) : null }
+            { showHelp ? <HelpInfo toggleHelp={toggleHelp} /> : null }
+            <TypeText text={text.hackScreen.header} />
+            
+            <br></br>
+            <Attempts attempts={attempts} />
+            <div className="toolbar">
+                <button onMouseEnter={() => onHoverWord("HELP")}
+                onClick={() => toggleHelp()}>HELP</button>
+                <button onMouseEnter={() => onHoverWord("ADMIN")}
+                onClick={() => onClickAdmin()}>ADMIN</button>
+            </div>
+            <div style={{display: "flex"}}>
+                <div 
+                style={{paddingRight: "10px", borderRight: "1px solid #ccc"}} 
+                onMouseLeave={() => setCurWord('')}>
+                { lines.map((line, i) => {
+                    let idCount = 0;
+                    return (
+                        <div key={"line" + i}>
+                            { line.map((word, wordNum) => {
+                                if (wordNum == 0) {
                                     return (
-                                        <TextSpan 
-                                        key={"span" + idCount}
-                                        id={"word" + idCount} 
-                                        text={word}
-                                        clickHandler={this.onClickWord}
-                                        hoverHandler={this.onHoverWord}
-                                        clickable={!this.state.duds.has(word)}
-                                        />
+                                        <span key={`marker${i}`}>{ word + " " }</span>
                                     );
-                                }) }
-                            </div>
-                        );
-                    }) }
-                    </div>
-                    <div style={{paddingLeft: "10px"}}>
-                        <Console ref={this.consoleRef} />
-                    </div>
+                                }
+                                idCount++;
+                                return (
+                                    <TextSpan 
+                                    key={"span" + idCount}
+                                    id={"word" + idCount} 
+                                    text={word}
+                                    clickHandler={onClickWord}
+                                    hoverHandler={onHoverWord}
+                                    clickable={!duds.has(word)}
+                                    />
+                                );
+                            }) }
+                        </div>
+                    );
+                }) }
+                </div>
+                <div style={{paddingLeft: "10px"}}>
+                    <Console currentWord={curWord} log={log} />
                 </div>
             </div>
-            </Fade>
-            <Fade show={this.state.showMessage}>
-                <GameOver />
-            </Fade>
-            </>
-        );
-    }
-    
+        </div>
+        </Fade>
+        <Fade show={showMessage}>
+            <GameOver />
+        </Fade>
+        </>
+    );
 }
-
-export default HackScreen;

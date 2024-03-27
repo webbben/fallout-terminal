@@ -12,26 +12,6 @@ img {
   z-index: -901; /* overlay is at -900, other background effects are at -999 */
 }
 
-.myPic {
-  filter: grayscale(100%) sepia(100%) hue-rotate(50deg) contrast(110%) saturate(2) brightness(1);
-  image-rendering: pixelated;
-}
-
-i {
-  color:#00cbdd
-}
-
-h4 {
-  color:#0185f8
-}
-
-.textCard {
-  text-align: left;
-  margin: 0.5em;
-  font-size: smaller;
-  flex: 1 1 0px;
-}
-
 .hackScreen_word:hover {
   background-color: #00dd00;
   color: black;
@@ -69,27 +49,4 @@ h4 {
   padding: 1em;
   width: 75%;
   font-size: 0.8em;
-}
-
-.menuDiv {
-  text-align: center;
-  height: 100vh;
-}
-
-.menuItems {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 70vh;
-}
-
-.menuItem {
-  cursor: pointer;
-  width: 100%;
-}
-
-.menuItem:hover {
-  background-color: #00dd0087;
-  color: black;
 }
