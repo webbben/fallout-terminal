@@ -13,7 +13,6 @@ export default function TypeText({ text, speed }) {
         async function typingEffect() {
             const currentText = text;
             setDisplayText("");
-            //await wait(150);
             for (let i = 0; i < currentText.length; i++) {
                 if (!isMounted) return;
                 setDisplayText((txt) => txt + currentText[i]);
@@ -24,11 +23,9 @@ export default function TypeText({ text, speed }) {
 
         return () => {
             isMounted = false;
-            console.log('switch!');
         }
-    }, [text]);
+    }, [text, speed]);
 
-    console.log('typetext:', text);
     return (
         <span>{displayText}</span>
     )

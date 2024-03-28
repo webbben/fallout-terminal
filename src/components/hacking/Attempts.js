@@ -12,15 +12,15 @@ export default function Attempts(props) {
 
     var msg = "";
 
-    if (attempts == 1) {
+    if (attempts === 1) {
         msg = " !! Lockout imminent !!"
     }
-    if (attempts == 0) {
+    if (attempts === 0) {
         msg = " System locked. Contact your administrator for assistance."
     }
 
 
     return (
-        <p>Attempts:{str}<span style={{ color: attempts == 1 ? 'orange' : 'unset' }}>{msg}</span></p>
+        <p>Attempts:{str}<span style={{ color: attempts === 1 ? 'orange' : 'unset' }}>{msg}</span></p>
     );
 }

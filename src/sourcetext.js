@@ -2,10 +2,10 @@ export const text = {
     hackScreen: {
         header: "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL",
         body: "This is a paragraph of example text, just to see how it types out on the screen.",
-        passwords: ['abstract', 'achilles', 'affinity', 'affluent', 'ambition', 'argument', 'aviation', 'autonomy', 'augustus', 'aurelian', 'aurelius', 'autocrat', 'arminius',
+        passwords: ['abstract', 'achilles', 'affinity', 'affluent', 'ambition', 'argument', 'aviation', 'autonomy', 'augustus', 'aurelian', 'aurelius', 'autocrat',
         'baseball', 'bakesale', 'ballista', 'basileus',
-        'campaign', 'commodus', 'complete', 'compound', 'computer', 'congress', 'consider', 'constant', 'consumer', 'calculus', 'contract', 'caesarea', 'cavalier', 'champion',
-        'diameter', 'diadochi', 'director', 'disclose', 'discount', 'discreet', 'document', 'database', 'denarius',
+        'campaign', 'commodus', 'complete', 'compound', 'computer', 'congress', 'consider', 'constant', 'consumer', 'calculus', 'contract', 'caesarea', 'cavalier', 'champion', 'contract',
+        'diameter', 'diadochi', 'director', 'disclose', 'discount', 'discreet', 'document', 'database', 'denarius', 'dinosaur',
         'emphasis', 'emulator', 'explicit', 'electron', 'electric', 'election', 'external', 'explorer',
         'football', 'firmware', 'frontend',
         'gradient', 'graduate', 'galactic',
@@ -18,21 +18,46 @@ export const text = {
         'sentence', 'separate', 'shinjuku', 'socrates', 'software', 'solitude', 'stunning', 'sukiyaki', 
         'tendency', 'terminal', 'tokugawa', 'tolerant', 'traction', 'traianus', 'tyrannis',
         'vertical', 'validate',
-        'yakiniku', 'yakitori', 'yakisoba', 'yokohama', 'takayama', 'harajuku', 'hokkaido', 
-        'spurious', 'nebulous', 'infamous', 'syllabus', 'ravenous', 'collosus', 'invictus', 'cerberus', 'sisyphus', 'morpheus', 'aquarius', 'dionysus', 'pandarus', 'hesperus', 'diomedes',
+        'yakiniku', 'yakitori', 'yakisoba', 'yokohama', 'takayama', 'harajuku', 'hokkaido', 'nobunaga',
+        'spurious', 'nebulous', 'infamous', 'syllabus', 'ravenous', 'collosus', 'invictus', 'cerberus', 'sisyphus', 'morpheus', 'aquarius', 'dionysus', 'diomedes', 'aquarium',
         'emporium', 'imperium', 'polonium', 'archives', 'diogenes', 'aviation', 'oblivion', 'scorpion', 'stallion', 'commando', 'komnenos', 'analysis', 'arquebus', 'atlantis',
         'katakana', 'basilica', 'magnolia', 'mongolia', 'timbuktu', 'honolulu', 'shanghai', 'stingray', 'chimaera', 'hydrogen', 'myrmidon', 'mariachi', 'calamari', 'carthage', 'tomahawk',
-        'hibernia', 'tomatoes', 
+        'hibernia', 'tomatoes', 'hongkong', 'germania', 'malaysia', 'anatolia', 'scotland', 'potatoes', 'shizuoka', 'yamanote', 'hiragana', 'furigana',
         ],
         gibberish_char: [
             "!","@","#","$","%","^","&","*","_","+","=","|",";","?","/","\\",
             "1","2","3","4","5","6","7","8","9","0","~",",",".",":","-",
-            "¬","¥","π","£","¢","§","{",")","]","<"
+            "¬","¥","{",")","]","<"
         ],
         brackets: [
             ["(",")"], ["[","]"], ["{","}"], ["<",">"]
         ]
     }
+}
+
+function sortBySimilarity(wordList, word) {
+    //console.log('comp:', word);
+
+    const sorted = wordList.sort((a, b) => {
+        return calculateSimilarity(b, word) - calculateSimilarity(a, word);
+    });
+    //for (const w of sorted) {
+    //   console.log(`word: ${w}, score: ${calculateSimilarity(w, word)}`);
+    //}
+    return sorted;
+}
+
+function calculateSimilarity(wordA, wordB) {
+    wordA = wordA.toUpperCase();
+    wordB = wordB.toUpperCase();
+    let score = 0;
+    const length = Math.min(wordA.length, wordB.length);
+    for (let i = 0; i < length; i++) {
+        if (wordA[i] === wordB[i]) {
+            score++;
+        }
+    }
+    return score;
 }
 
 // each line will be a line marker, and then a series of gibberish combined with brackets and passwords
@@ -42,9 +67,15 @@ export function generateLines() {
     const lineMarkers = generateLineNumbers(numLines);
     const lineLength = 30;
     let lines = [];
-    let words = [...text.hackScreen.passwords];
+    let allWords = [...text.hackScreen.passwords];
+    shuffleArray(allWords);
+
+    // select a password, and then get a list of words that are similar to it
+    const password = allWords.pop().toUpperCase();
+    let words = sortBySimilarity([...allWords], password).slice(0, numLines*2);
     shuffleArray(words);
     let usedWords = [];
+    const passwordLine = Math.floor(Math.random() * numLines);
 
     // for each line, try to fit in a password, then try to fit in gibberish strings of descending length
     // each line must be the same length (lineLength)
@@ -53,8 +84,14 @@ export function generateLines() {
         let curLen = lineLength;
         let curLine = [];
         // adding password
-        if (Math.random() > 0.2) {
-            let curWord = words.pop().toUpperCase();
+        if (i === passwordLine) {
+            curLine.push(password);
+            usedWords.push(password);
+            curLen -= password.length;
+        }
+        // adding other words
+        else if (Math.random() > 0.2) {
+            let curWord = words.shift().toUpperCase();
             curLine.push(curWord);
             usedWords.push(curWord);
             curLen -= curWord.length;
@@ -65,7 +102,6 @@ export function generateLines() {
             curLine.push(bracket);
             curLen -= bracket.length;
         }
-        
         // fill in the remaining space with gibberish characters
         while (curLen > 0) {
             curLine.push(generateGibberish(1));
@@ -76,8 +112,7 @@ export function generateLines() {
         lines.push(curLine);
     }
     
-    shuffleArray(usedWords);
-    return [lines, usedWords.pop(), usedWords];
+    return [lines, password, usedWords];
 }
 
 function generateGibberish(length) {

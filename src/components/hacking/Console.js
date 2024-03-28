@@ -5,9 +5,6 @@ export default function Console({ currentWord, log, typeSpeed }) {
         log = [];
     }
 
-    
-
-    console.log("current word:", currentWord);
     return (
         <div>
             { log.map((line, index) => {

@@ -19,16 +19,10 @@ import TypeText from "./TypeText";
  * @prop {function} accessCallback callback function for when access is granted; use this to change state or do whatever you like.
  * @prop {boolean} falloutFx boolean flag for whether or not to show the extra retro terminal effects, like the scrolling line or the thin black bars. Defaults to true.
  */
-export default function HackScreen({ accessCallback, falloutFx }) {
-
-    if (falloutFx === undefined) {
-        falloutFx = true;
-    }
-
+export default function HackScreen({ accessCallback = () => console.log('access granted!'), falloutFx = true }) {
     const [lines, setLines] = useState([]);
     const [password, setPassword] = useState('');
     const [showHelp, setShowHelp] = useState(false);
-    const [access, setAccess] = useState(false);
     const [attempts, setAttempts] = useState(5);
     const [showBody, setShowBody] = useState(true);
     const [showMessage, setShowMessage] = useState(false);
@@ -111,7 +105,9 @@ export default function HackScreen({ accessCallback, falloutFx }) {
     function accessGranted() {
         const audio = new Audio(sound_good);
         audio.play()
-        setTimeout(() => setAccess(true), 3000);
+        setTimeout(() => {
+            accessCallback();
+        }, 3000);
     }
 
     // handler for when hovering over a word; causes word to be typed into the console input
@@ -131,7 +127,7 @@ export default function HackScreen({ accessCallback, falloutFx }) {
         }
         let matchCount = 0;
         for (let i = 0; i < word.length; i++) {
-            if (word.charAt(i) == password.charAt(i)) {
+            if (word.charAt(i) === password.charAt(i)) {
                 matchCount++;
             }
         }
@@ -182,20 +178,14 @@ export default function HackScreen({ accessCallback, falloutFx }) {
         setTimeout(() => setShowBody(false), 2000);
     }
 
+    //console.log(password);
+
     return (
         <>
         { falloutFx && <Fallout /> }
         <Fade show={showBody} end={handleTransition} unmount speed={"fast"}>
         <div>
-            {
-                /*
-                The callback function to call when access is granted
-                @type {string}
-                @required
-                */
-            }
-            { access ? (accessCallback ? accessCallback() : console.log("access granted!")) : null }
-            { showHelp ? <HelpInfo toggleHelp={toggleHelp} /> : null }
+            { showHelp && <HelpInfo toggleHelp={toggleHelp} /> }
             <TypeText text={text.hackScreen.header} />
             
             <br></br>
@@ -215,7 +205,7 @@ export default function HackScreen({ accessCallback, falloutFx }) {
                     return (
                         <div key={"line" + i}>
                             { line.map((word, wordNum) => {
-                                if (wordNum == 0) {
+                                if (wordNum === 0) {
                                     return (
                                         <span key={`marker${i}`}>{ word + " " }</span>
                                     );

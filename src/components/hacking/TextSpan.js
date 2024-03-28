@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import { text } from "../../sourcetext";
 
+export default function TextSpan(props) {
 
-
-function TextSpan(props) {
+    const hasBeenClicked = useRef(false);
     
     function isBracket() {
         const first = props.text.charAt(0);
@@ -11,13 +11,12 @@ function TextSpan(props) {
         const bracketList = text.hackScreen.brackets;
 
         for (let i = 0; i < bracketList.length; i++) {
-            if (first == bracketList[i][0]) {
-                if (last == bracketList[i][1]) {
+            if (first === bracketList[i][0]) {
+                if (last === bracketList[i][1]) {
                     return true;
                 }
             }
         }
-
         return false;
     }
 
@@ -32,9 +31,8 @@ function TextSpan(props) {
         props.clickHandler(props.text)
 
     }
-    const hasBeenClicked = useRef(false); // only used for keeping brackets from being clicked more than once
 
-    return(
+    return (
         <>
             { props.clickable ? 
             <span 
@@ -46,5 +44,3 @@ function TextSpan(props) {
         </>
     );
 }
-
-export default TextSpan;
