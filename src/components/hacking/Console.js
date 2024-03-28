@@ -1,10 +1,12 @@
-import { Component } from "react";
 import TypeText from "./TypeText";
 
-export default function Console({ currentWord, log }) {
+export default function Console({ currentWord, log, typeSpeed }) {
     if (!log) {
         log = [];
     }
+
+    
+
     console.log("current word:", currentWord);
     return (
         <div>
@@ -13,7 +15,7 @@ export default function Console({ currentWord, log }) {
                     <p key={index}> {"> "} { (line === "Exact match!" || line === "Access Granted!") ? <b>{line}</b> : line }</p>
                 );
             }) }
-            <p><span>{"> "}</span><TypeText text={currentWord}/><span id="hackScreen_cursor"></span></p>
+            <p><span>{"> "}</span>{ currentWord !== '' && <TypeText text={currentWord} speed={typeSpeed}/> }<span id="hackScreen_cursor"></span></p>
         </div>
     );
 }

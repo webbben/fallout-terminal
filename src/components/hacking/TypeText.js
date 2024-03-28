@@ -13,6 +13,7 @@ export default function TypeText({ text, speed }) {
         async function typingEffect() {
             const currentText = text;
             setDisplayText("");
+            //await wait(150);
             for (let i = 0; i < currentText.length; i++) {
                 if (!isMounted) return;
                 setDisplayText((txt) => txt + currentText[i]);

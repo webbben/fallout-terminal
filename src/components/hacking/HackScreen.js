@@ -1,5 +1,5 @@
 import { text, generateLines } from "../../sourcetext";
-import { Component, createRef, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import TextSpan from "./TextSpan";
 import Console from "./Console";
 import Attempts from "./Attempts";
@@ -16,7 +16,6 @@ import TypeText from "./TypeText";
  * 
  * props:
  * 
- * 
  * @prop {function} accessCallback callback function for when access is granted; use this to change state or do whatever you like.
  * @prop {boolean} falloutFx boolean flag for whether or not to show the extra retro terminal effects, like the scrolling line or the thin black bars. Defaults to true.
  */
@@ -26,47 +25,53 @@ export default function HackScreen({ accessCallback, falloutFx }) {
         falloutFx = true;
     }
 
-    const set = new Set();
-
     const [lines, setLines] = useState([]);
     const [password, setPassword] = useState('');
     const [showHelp, setShowHelp] = useState(false);
-    const [duds, setDuds] = useState(set);
     const [access, setAccess] = useState(false);
     const [attempts, setAttempts] = useState(5);
     const [showBody, setShowBody] = useState(true);
     const [showMessage, setShowMessage] = useState(false);
     const [curWord, setCurWord] = useState('');
+    const defaultTypeSpeed = 50;
+    const typeSpeed = useRef(defaultTypeSpeed);
     const [log, setLog] = useState([]);
 
+    function setWord(word) {
+        setCurWord(word);
+    }
+
+    function clearWord() {
+        setCurWord('');
+    }
+
     function addToLog(enteredWord, consoleResult) {
+        let addLines = [enteredWord];
+        if (consoleResult !== "") {
+            addLines.push(consoleResult);
+        }
         if (log.length >= 16) {
-            setLog([enteredWord, consoleResult]);
+            setLog(addLines);
             return;
         }
-        setLog((prevLog) => [...prevLog, enteredWord, consoleResult]);
+        setLog((prevLog) => [...prevLog, ...addLines]);
     }
 
     const words = useRef([]);
     const isActive = useRef(true);
+    const duds = useRef(new Set());
 
     useEffect(() => {
         const data = generateLines();
         setLines(data[0]);
         setPassword(data[1]);
-        setDuds(new Set());
+        duds.current = new Set();
         words.current = data[2];
     }, []);
-
-    //#region functions for typing to the screen 
 
     function wait(milliseconds) {
       return new Promise((resolve) => setTimeout(resolve, milliseconds));
     }
-    
-    //#endregion
-
-    //#region handlers for console input
 
     // handler for when a word is clicked so it can be checked with the password
     function onClickWord(word, isBracket=false) {
@@ -78,7 +83,7 @@ export default function HackScreen({ accessCallback, falloutFx }) {
         const result = evaluateWord(word);
         console.log(result[0]);
         addToLog(word, result[1]);
-        setCurWord('');
+        clearWord();
         if (result[0]) {
             // correct password; start transition to next screen
             isActive.current = false;
@@ -93,16 +98,14 @@ export default function HackScreen({ accessCallback, falloutFx }) {
 
     function handleBrackets(word) {
         if (attempts === 5 || Math.random() > 0.3) {
-            setDuds((prevDuds) => {
-                prevDuds.add(words.current.pop())
-            });
+            duds.current.add(words.current.pop())
             addToLog(word, "Dud removed");
-            setCurWord('');
+            clearWord();
             return;
         }
         setAttempts((prevAttempts) => prevAttempts + 1);
         addToLog(word, "Attempts regenerated");
-        setCurWord('');
+        clearWord();
     }
 
     function accessGranted() {
@@ -112,9 +115,10 @@ export default function HackScreen({ accessCallback, falloutFx }) {
     }
 
     // handler for when hovering over a word; causes word to be typed into the console input
-    function onHoverWord(word) {
+    async function onHoverWord(word) {
         if (!isActive.current) return;
-        setCurWord(word);
+        typeSpeed.current = defaultTypeSpeed;
+        setWord(word);
     }
 
     // evaluate if the given word is the password; returns the number of matching chars if not.
@@ -140,29 +144,31 @@ export default function HackScreen({ accessCallback, falloutFx }) {
 
     async function onClickAdmin() {
         if (!isActive.current) return;
-
         isActive.current = false;
         addToLog("ADMIN", "Accessing admin priviledges...");
-        setCurWord('');
+        clearWord();
         await wait(1000);
         setLog([]);
         await wait(100);
-        setCurWord("sudo su root");
+        setWord("sudo su root");
         await wait(800);
+        clearWord();
         addToLog("sudo su root", "");
-        setCurWord("rm -rf /");
+        await wait(200);
+        setWord("rm -rf /");
         await wait(800);
+        clearWord();
         addToLog("rm -rf /", "");
-        setCurWord(". . . .");
-        await wait(500);
-        setCurWord('');
+        typeSpeed.current = 300;
+        setWord(". . . .");
+        await wait(3000);
+        clearWord();
         addToLog(". . . .", "");
         await wait(300);
+        typeSpeed.current = defaultTypeSpeed;
         addToLog("sysadmin override", "Access Granted!");
         accessGranted();
     }
-
-    //#endregion  
 
     function handleTransition() {
         if (!showBody) {
@@ -203,7 +209,7 @@ export default function HackScreen({ accessCallback, falloutFx }) {
             <div style={{display: "flex"}}>
                 <div 
                 style={{paddingRight: "10px", borderRight: "1px solid #ccc"}} 
-                onMouseLeave={() => setCurWord('')}>
+                onMouseLeave={() => clearWord()}>
                 { lines.map((line, i) => {
                     let idCount = 0;
                     return (
@@ -222,7 +228,7 @@ export default function HackScreen({ accessCallback, falloutFx }) {
                                     text={word}
                                     clickHandler={onClickWord}
                                     hoverHandler={onHoverWord}
-                                    clickable={!duds.has(word)}
+                                    clickable={!duds.current.has(word)}
                                     />
                                 );
                             }) }
@@ -231,7 +237,7 @@ export default function HackScreen({ accessCallback, falloutFx }) {
                 }) }
                 </div>
                 <div style={{paddingLeft: "10px"}}>
-                    <Console currentWord={curWord} log={log} />
+                    <Console currentWord={curWord} log={log} typeSpeed={typeSpeed.current} />
                 </div>
             </div>
         </div>
